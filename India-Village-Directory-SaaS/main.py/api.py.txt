@@ -1,0 +1,74 @@
+import os
+import signal
+import time
+import nest_asyncio
+import uvicorn
+import threading
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security.api_key import APIKeyHeader
+from sqlalchemy import create_engine, text
+from fastapi.middleware.cors import CORSMiddleware
+
+
+DB_URL = "postgresql://neondb_owner:npg_eU0cAdvMT3hn@ep-nameless-wind-aomwpppd-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+engine = create_engine(DB_URL)
+
+
+app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+API_KEY_NAME = "X-API-KEY"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+
+def get_api_key(header_key: str = Depends(api_key_header)):
+    if not header_key:
+        raise HTTPException(status_code=403, detail="API Key is missing.")
+    with engine.connect() as conn:
+        user = conn.execute(
+            text("SELECT used_requests, request_limit FROM api_users WHERE api_key = :key"),
+            {"key": header_key}
+        ).fetchone()
+        if not user:
+            raise HTTPException(status_code=403, detail="Invalid API Key.")
+    return header_key
+
+
+@app.get("/search/village")
+def search_village(name: str, api_key: str = Depends(get_api_key)):
+    with engine.begin() as conn:
+        
+        conn.execute(text("UPDATE api_users SET used_requests = used_requests + 1 WHERE api_key = :key"), {"key": api_key})
+        
+        
+        query = text("""
+            SELECT v.name, sd.name, d.name, s.name
+            FROM villages v
+            JOIN sub_districts sd ON v.sub_district_id = sd.id
+            JOIN districts d ON sd.district_id = d.id
+            JOIN states s ON d.state_id = s.id
+            WHERE v.name ILIKE :vname LIMIT 10
+        """)
+        result = conn.execute(query, {"vname": f"%{name}%"})
+        results = [{"village": r[0], "sub_district": r[1], "district": r[2], "state": r[3]} for r in result]
+    return {"data": results}
+
+
+def run_server():
+    nest_asyncio.apply()
+    config = uvicorn.Config(app, host="127.0.0.1", port=8001, log_level="info")
+    server = uvicorn.Server(config)
+    server.run()
+
+
+print("[CLEANUP] Starting fresh server on Port 8001...")
+threading.Thread(target=run_server, daemon=True).start()
+time.sleep(2)
+print("[SUCCESS] Server is LIVE and SECURE!")... verify. is this the code?

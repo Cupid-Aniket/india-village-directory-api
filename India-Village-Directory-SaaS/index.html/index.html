@@ -1,0 +1,199 @@
+from IPython.display import HTML
+
+# The Ultimate Unified SaaS Command Center
+unified_platform_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGD SaaS - Unified Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --neon-blue: #00f2ff; --neon-purple: #bc13fe; }
+        body { 
+            background: #05070a; 
+            font-family: 'Inter', sans-serif; color: #c9d1d9; 
+        }
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+        }
+        .neon-glow { text-shadow: 0 0 10px rgba(0, 242, 255, 0.5); color: var(--neon-blue); }
+        .btn-gradient {
+            background: linear-gradient(135deg, #00f2ff 0%, #bc13fe 100%);
+            transition: 0.3s;
+        }
+        .btn-gradient:hover { filter: brightness(1.2); transform: translateY(-2px); box-shadow: 0 0 20px rgba(188, 19, 254, 0.4); }
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        #suggestions { position: absolute; width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px; z-index: 100; display: none; }
+        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #30363d; }
+        .suggestion-item:hover { background: #1f2937; color: var(--neon-blue); }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    <div class="max-w-[1600px] mx-auto">
+        
+        <div class="flex justify-between items-center mb-8 px-4">
+            <div>
+                <h1 class="text-2xl font-bold orbitron neon-glow uppercase tracking-widest">IGD UNIFIED ENGINE v5.0</h1>
+                <p class="text-[10px] text-gray-500 tracking-[0.4em] uppercase">Architecture: Aniket Das | IIM Sambalpur</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
+                <span class="text-[10px] font-bold text-gray-400">SYSTEM: ONLINE</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <div class="lg:col-span-3 space-y-6">
+                <div class="glass-card p-6 border-b-4 border-blue-500">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Live Traffic</p>
+                    <canvas id="usageChart" height="200"></canvas>
+                </div>
+                
+                <div class="glass-card p-6">
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Quota Monitoring</p>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1"><span>API LIMIT (PRO)</span><span>85%</span></div>
+                            <div class="w-full bg-gray-800 h-1.5 rounded-full"><div class="bg-blue-400 h-1.5 rounded-full" style="width: 85%"></div></div>
+                        </div>
+                        <div class="pt-4 border-t border-white/5">
+                            <p class="text-[10px] text-gray-500">Active Node: <strong>IGD-ANIKET-PRO-2025</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 glass-card p-6 flex flex-col">
+                <h2 class="text-xs font-bold orbitron mb-6 text-blue-400 uppercase tracking-widest">Global Terminal Query</h2>
+                <div class="relative mb-4">
+                    <input type="text" id="terminalInput" placeholder="Search Village..." 
+                           class="w-full bg-black/40 border border-white/10 p-4 rounded-xl text-white outline-none focus:border-blue-500 transition">
+                </div>
+                <button onclick="terminalQuery()" class="btn-gradient w-full py-4 rounded-xl font-bold orbitron text-xs tracking-widest uppercase">Execute Query</button>
+                
+                <div id="terminalResults" class="mt-6 space-y-3 overflow-y-auto max-h-[400px] custom-scroll pr-2 flex-1">
+                    <div class="text-[10px] text-gray-600 italic">Waiting for input...</div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 glass-card p-8 border-t-4 border-purple-500">
+                <h2 class="text-xs font-bold orbitron mb-6 text-purple-400 uppercase tracking-widest">B2B Implementation: Checkout</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[9px] text-gray-500 uppercase">Customer Name</label>
+                        <input type="text" value="Aniket Das" class="w-full bg-white/5 border border-white/10 p-3 rounded-lg text-sm">
+                    </div>
+                    
+                    <div class="relative">
+                        <label class="text-[9px] text-gray-500 uppercase">Village (API Autocomplete)</label>
+                        <input type="text" id="formVillage" placeholder="Type for suggestions..." class="w-full bg-white/5 border border-white/10 p-3 rounded-lg text-sm outline-none focus:border-purple-500">
+                        <div id="suggestions" class="custom-scroll max-h-40 overflow-y-auto text-xs"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[9px] text-gray-500 uppercase">District</label>
+                            <input type="text" id="formDistrict" readonly class="w-full bg-white/10 border border-white/10 p-3 rounded-lg text-xs text-gray-400">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-gray-500 uppercase">State</label>
+                            <input type="text" id="formState" readonly class="w-full bg-white/10 border border-white/10 p-3 rounded-lg text-xs text-gray-400">
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-white/5 border border-white/20 py-4 rounded-xl text-xs font-bold hover:bg-white/10 transition mt-4">PROCESS TRANSACTION</button>
+                </div>
+                <div class="mt-6 p-4 bg-purple-500/5 rounded-xl border border-purple-500/10">
+                    <p class="text-[9px] text-purple-300 leading-relaxed italic text-center">"This module demonstrates how your SaaS API eliminates manual address entry errors for B2B clients."</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- CHART CONFIG ---
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['10am', '11am', '12pm', '1pm', '2pm', '3pm'],
+                datasets: [{
+                    data: [20, 45, 30, 80, 50, 95],
+                    borderColor: '#00f2ff',
+                    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                    fill: true, tension: 0.4
+                }]
+            },
+            options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { color: '#555', font: { size: 8 } } } } }
+        });
+
+        // --- TERMINAL QUERY (MIDDLE) ---
+        async function terminalQuery() {
+            const name = document.getElementById('terminalInput').value;
+            const resBox = document.getElementById('terminalResults');
+            resBox.innerHTML = '<div class="text-[10px] animate-pulse text-cyan-500">ACCESSING CLOUD DATABASE...</div>';
+            
+            try {
+                const response = await fetch(`http://127.0.0.1:8001/search/village?name=${name}`, {
+                    headers: { 'X-API-KEY': 'IGD-ANIKET-2025-PRO' }
+                });
+                const json = await response.json();
+                resBox.innerHTML = '';
+                json.data.forEach(item => {
+                    resBox.innerHTML += `
+                        <div class="bg-white/5 p-3 rounded-lg border border-white/5 hover:border-blue-500/50 transition">
+                            <div class="text-blue-400 font-bold text-xs">${item.village}</div>
+                            <div class="text-gray-500 text-[9px] uppercase">${item.district} // ${item.state}</div>
+                        </div>
+                    `;
+                });
+            } catch (e) { resBox.innerHTML = '<div class="text-red-500 text-[10px]">SERVER OFFLINE</div>'; }
+        }
+
+        // --- FORM AUTOCOMPLETE (RIGHT) ---
+        const formInput = document.getElementById('formVillage');
+        const sugBox = document.getElementById('suggestions');
+
+        formInput.addEventListener('input', async (e) => {
+            const query = e.target.value;
+            if (query.length < 3) { sugBox.style.display = 'none'; return; }
+
+            try {
+                const res = await fetch(`http://127.0.0.1:8001/search/village?name=${query}`, {
+                    headers: { 'X-API-KEY': 'IGD-ANIKET-2025-PRO' }
+                });
+                const data = await res.json();
+                sugBox.innerHTML = '';
+                if(data.data.length > 0) {
+                    sugBox.style.display = 'block';
+                    data.data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.innerHTML = `<strong>${item.village}</strong> <span class="text-gray-500">(${item.district})</span>`;
+                        div.onclick = () => {
+                            formInput.value = item.village;
+                            document.getElementById('formDistrict').value = item.district;
+                            document.getElementById('formState').value = item.state;
+                            sugBox.style.display = 'none';
+                        };
+                        sugBox.appendChild(div);
+                    });
+                }
+            } catch (err) { console.error(err); }
+        });
+    </script>
+</body>
+</html>
+"""
+display(HTML(unified_platform_html))
